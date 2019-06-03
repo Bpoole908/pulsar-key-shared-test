@@ -1,0 +1,12 @@
+version: "2.2"
+services:
+  producer:
+    image: pulsar-key-sharing:latest
+    command: mvn exec:java -Dexec.mainClass=tutorial.ProducerTutorial -Dexec.args="10 10"
+    volumes: 
+      - /home/ben/.m2:/root/.m2/
+    restart: on-failure:5
+networks:
+  default:
+    external:
+      name: tutorial_default

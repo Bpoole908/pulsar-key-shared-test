@@ -1,0 +1,19 @@
+version: "2.2"
+services:
+  pulsar:
+    image: pulsar:2.4.0-SNAPSHOT
+    expose: 
+      - 6650
+    entrypoint: bin/pulsar standalone
+    volumes: 
+      - /home/docker-volumes/key-sharing:/pulsar/data
+  cosnumer:
+      build: .
+      image: pulsar-key-sharing:latest
+      command: mvn exec:java -Dexec.mainClass=tutorial.ConsumerTutorial
+      volumes: 
+        - /home/ben/.m2:/root/.m2/
+      depends_on:
+        - pulsar
+      restart: on-failure:5
+      scale: 10
