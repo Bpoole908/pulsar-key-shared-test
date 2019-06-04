@@ -26,9 +26,7 @@ public class Produces {
     private PulsarClient client;
     private Consumer[] consumers;
     private int[] expectedMessages;
-    
-
-    Producer<byte[]> producer;
+    private Producer<byte[]> producer;
 
     public Produces(PulsarClient client, int nConsumers, String topicName) throws PulsarClientException {
         this.nConsumers = nConsumers;
@@ -45,7 +43,6 @@ public class Produces {
                 log.error(e.getMessage());
                 System.exit(1);
         }
-      
     }
 
     public void stream(int nMessages) throws PulsarClientException {
@@ -94,7 +91,6 @@ public class Produces {
                 break;
             }
         }
-
     }
 
     private void sleep(int ms){
