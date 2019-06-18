@@ -13,29 +13,34 @@ import org.slf4j.LoggerFactory;
 
 public class ConsumerTutorial {
     private static final Logger log = LoggerFactory.getLogger(ConsumerTutorial.class);
-    private static final String LOCAL_SERVICE_URL = "pulsar://localhost:6650";
-    private static final String SERVICE_URL = "pulsar://pulsar:6650";
-    private static final String TOPIC_NAME = "persistent://public/default/key_shared";
-    private static final String SUBSCRIPTION_NAME = "key_shared";
+    private static final String SERVICE_URL = System.getenv("SERVICE_URL");
+    private static final String TOPIC = System.getenv("TOPIC");
+    private static final String SUBSCRIPTION = System.getenv("SUBSCRIPTION");
+    private static final int BEFORE_START = Integer.parseInt(System.getenv("BEFORE_START"));
+    
     private static Consumer<byte[]> consumer;
     
     public static void main(String[] args) throws IOException {
        PulsarClient client = PulsarClient.builder()
                 .serviceUrl(SERVICE_URL)
                 .build();
-                
+
+        // Sleep consumer while cluster initializes.
+        sleep(BEFORE_START);
+
         try{
             consumer = client.newConsumer()
-                .topic(TOPIC_NAME)
-                .subscriptionName(SUBSCRIPTION_NAME)
+                .topic(TOPIC)
+                .subscriptionName(SUBSCRIPTION)
                 .subscriptionType(SubscriptionType.Key_Shared)
                 .subscribe();
         } catch(PulsarClientException e){
+            e.printStackTrace();
             log.info(e.getMessage());
             System.exit(1);
         }
       
-        log.info("CONNECTED: {}", TOPIC_NAME);
+        log.info("CONSUMER {} CONNECTED: {}", consumer.getConsumerName(), TOPIC);
 
         do {
             // Wait until a message is available
@@ -49,5 +54,14 @@ public class ConsumerTutorial {
             // Acknowledge processing of the message so that it can be deleted
             consumer.acknowledge(msg);
         } while (true);
+    }
+
+    private static void sleep(int ms){
+        try {
+            Thread.sleep(ms);
+        }
+        catch(InterruptedException e){
+            Thread.currentThread().interrupt();
+        }
     }
 }

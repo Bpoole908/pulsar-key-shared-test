@@ -1,19 +1,45 @@
 version: "2.2"
+
 services:
+
   pulsar:
-    image: pulsar:2.4.0-SNAPSHOT
-    expose: 
-      - 6650
+    image: apachepulsar/pulsar:2.4.0-SNAPSHOT
+    ports: 
+      - 6650:6650
+      - 8080:8080
     entrypoint: bin/pulsar standalone
     volumes: 
       - /home/docker-volumes/key-sharing:/pulsar/data
-  cosnumer:
+
+  consumer:
       build: .
-      image: pulsar-key-sharing:latest
-      command: mvn exec:java -Dexec.mainClass=tutorial.ConsumerTutorial
+      image: pulsar-key-sharing:2.4.0-SHAPSHOT 
+      entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=tutorial.ConsumerTutorial"]
       volumes: 
         - /home/ben/.m2:/root/.m2/
       depends_on:
         - pulsar
+      environment:
+        SERVICE_URL: "pulsar://pulsar:6650" #"pulsar://192.168.99.100:30002";
+        TOPIC: "persistent://public/default/key_shared"
+        SUBSCRIPTION: "key_shared"
+        BEFORE_START: 10000
       restart: on-failure:5
-      scale: 10
+      scale: 2
+
+  producer:
+    image: pulsar-key-sharing:2.4.0-SHAPSHOT 
+    entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=tutorial.ProducerTutorial"]
+    volumes: 
+      - /home/ben/.m2:/root/.m2/
+    depends_on:
+      - consumer
+    environment:
+      SERVICE_URL: "pulsar://pulsar:6650" #"pulsar://192.168.99.100:30002";
+      SERVICE_HTTP_URL: "http://pulsar:8080"
+      TOPIC: "persistent://public/default/key_shared"
+      SUBSCRIPTION: "key_shared"
+      BEFORE_START: 15000
+      N_CONSUMERS: 2
+      N_MESSAGES: 10
+    restart: on-failure:5
