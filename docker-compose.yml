@@ -23,10 +23,10 @@ services:
         SERVICE_URL: "pulsar://pulsar:6650" #"pulsar://192.168.99.100:30002";
         TOPIC: "persistent://public/default/key_shared"
         SUBSCRIPTION: "key_shared"
-        BEFORE_START: 10000
+        BEFORE_START: 15000
         TIME_OUT: 60000
       restart: on-failure:5
-      scale: 2
+      scale: 5
 
   producer:
     image: pulsar-key-sharing:2.4.0-SHAPSHOT 
@@ -40,6 +40,6 @@ services:
       SERVICE_HTTP_URL: "http://pulsar:8080"
       TOPIC: "persistent://public/default/key_shared"
       SUBSCRIPTION: "key_shared"
-      BEFORE_START: 15000
-      N_MESSAGES: 10
+      BEFORE_START: 20000
+      N_MESSAGES: 200
     restart: on-failure:5

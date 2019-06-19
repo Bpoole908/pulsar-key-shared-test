@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
 import java.util.List;
 import java.util.Map;
 /**
- * Signal producer to stream: docker exec demo_producer_1 mvn
+ *  Run producer: mvn exec:java -Dexec.mainClass=tutorial.ProducerTutorial
  */
 public class ProducerTutorial {
     private static final Logger log = LoggerFactory.getLogger(ProducerTutorial.class);
@@ -31,6 +31,7 @@ public class ProducerTutorial {
             .serviceUrl(SERVICE_URL)
             .build();
             
+        // Sleep consumer while cluster initializes.
         sleep(BEFORE_START);
 
         try{
@@ -38,7 +39,6 @@ public class ProducerTutorial {
             PseudoStream pseudoStream = new PseudoStream(SERVICE_HTTP_URL, HASH_RANGE_SIZE);
             Produces produce = new Produces(client,TOPIC, N_MESSAGES);
             produce.stream(1, pseudoStream, TOPIC, SUBSCRIPTION);
-            pseudoStream.logExpectedMessages(N_MESSAGES);
         } catch (PulsarClientException | PulsarAdminException | ConsumerAssignException e){
             log.error(e.getMessage());
             System.exit(1);

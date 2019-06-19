@@ -24,7 +24,6 @@ public class Produces {
     private int nMessages;
     private PulsarClient client;
     private Producer<byte[]> producer;
-   
     
     public Produces(PulsarClient client, String topicName, int nMessages) 
         throws PulsarClientException {
@@ -39,20 +38,28 @@ public class Produces {
     
     public void stream(int messagesPerSecond, PseudoStream pseudoStream,
         String topic, String subscription) 
-        throws PulsarClientException, ConsumerAssignException, PulsarAdminException {
-
-        // Checks for active consumers and set up pseudo consumers for
-        // key shared predictions.
-        pseudoStream.initializePseudoConsumers(topic, subscription);
+        throws PulsarClientException, 
+               ConsumerAssignException, 
+               PulsarAdminException {
+      
         IntStream.range(1, this.nMessages+1).forEach(i -> {
+            try{
+                //long startTime = System.nanoTime();
+                pseudoStream.managePseudoConsumers(topic, subscription);
+                //long endTime = System.nanoTime();
+                //log.debug("Run time: {} ms", (endTime - startTime) / 1e6);
+            } catch(PulsarClientException | PulsarAdminException | ConsumerAssignException e){
+                log.error(e.getMessage());
+                System.exit(1);
+            }
+           
             String payload = String.format("hello-pulsar-%d", i);
-            // Randomly generate ordering key
             String orderingKey = UUID.randomUUID().toString();
 
             // Create a pseudo stream that predicts which consumers will recieve 
-            // each message based on the odering key's hashing slot.
+            // each message based on the ordering key's hashing slot.
             int slot = pseudoStream.getSlot(orderingKey.getBytes());
-            pseudoStream.selectConsumer(orderingKey.getBytes());
+            String consumerName = pseudoStream.stream(orderingKey.getBytes());
 
              try {
                 // Build a message object and send message.
@@ -60,14 +67,16 @@ public class Produces {
                     .orderingKey(orderingKey.getBytes())
                     .value(payload.getBytes())
                     .send();
-                log.info("Published message: '{}' ID: {} Slot: {}", 
-                    payload, msgId, slot);
+                log.info("Published message: '{}' ID: {}", payload, msgId);
+                pseudoStream.logMessageDistribution(consumerName, slot);
+                   
             } catch (PulsarClientException e) {
                 log.error(e.getMessage());
                 log.error("Message failed to send");
             }
             sleep(UNIT_TIME / messagesPerSecond);
         });
+        pseudoStream.logMessageDistribution();
         client.close();
     }
 
@@ -76,7 +85,7 @@ public class Produces {
 
         log.info("Sending {} messages", this.nMessages);
 
-        IntStream.range(1, this.nMessages+1).forEach(i -> {
+        IntStream.range(1, this.nMessages).forEach(i -> {
             String payload = String.format("hello-pulsar-%d", i);
             // Randomly generate ordering key
             String orderingKey = UUID.randomUUID().toString();
@@ -97,7 +106,7 @@ public class Produces {
             sleep(UNIT_TIME / messagesPerSecond);
         });
         client.close();
-}
+    }
 
     private void sleep(int ms){
         try {
