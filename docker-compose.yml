@@ -24,6 +24,7 @@ services:
         TOPIC: "persistent://public/default/key_shared"
         SUBSCRIPTION: "key_shared"
         BEFORE_START: 10000
+        TIME_OUT: 60000
       restart: on-failure:5
       scale: 2
 
@@ -40,6 +41,5 @@ services:
       TOPIC: "persistent://public/default/key_shared"
       SUBSCRIPTION: "key_shared"
       BEFORE_START: 15000
-      N_CONSUMERS: 2
       N_MESSAGES: 10
     restart: on-failure:5

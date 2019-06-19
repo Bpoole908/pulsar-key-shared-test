@@ -1,8 +1,5 @@
 package tutorial;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.pulsar.client.api.Consumer;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.PulsarClient;
@@ -11,13 +8,17 @@ import org.apache.pulsar.client.api.SubscriptionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
 public class ConsumerTutorial {
     private static final Logger log = LoggerFactory.getLogger(ConsumerTutorial.class);
     private static final String SERVICE_URL = System.getenv("SERVICE_URL");
     private static final String TOPIC = System.getenv("TOPIC");
     private static final String SUBSCRIPTION = System.getenv("SUBSCRIPTION");
     private static final int BEFORE_START = Integer.parseInt(System.getenv("BEFORE_START"));
-    
+    private static final int TIME_OUT = Integer.parseInt(System.getenv("TIME_OUT"));
     private static Consumer<byte[]> consumer;
     
     public static void main(String[] args) throws IOException {
@@ -42,10 +43,13 @@ public class ConsumerTutorial {
       
         log.info("CONSUMER {} CONNECTED: {}", consumer.getConsumerName(), TOPIC);
 
-        do {
+        while(true) {
             // Wait until a message is available
-            Message<byte[]> msg = consumer.receive();
-
+            Message<byte[]> msg = consumer.receive(TIME_OUT, TimeUnit.MILLISECONDS);
+            if (msg == null){
+                logStats(consumer);
+                continue;
+            }
             // Extract the message as a printable string and then log
             String content = new String(msg.getData());
             log.info("Received message '{}' with ID {}", content, msg.getMessageId());
@@ -53,7 +57,18 @@ public class ConsumerTutorial {
             
             // Acknowledge processing of the message so that it can be deleted
             consumer.acknowledge(msg);
-        } while (true);
+        }
+    }
+
+    public static void logStats(Consumer consumer){
+        log.info("Total messages received: {}", 
+            consumer.getStats().getTotalMsgsReceived());
+        log.info("Total messages received failed: {}", 
+            consumer.getStats().getTotalReceivedFailed());
+        log.info("Total acknowledgments sent: {}", 
+            consumer.getStats().getTotalAcksSent());
+        log.info("Total acknowledgments failed: {}", 
+            consumer.getStats().getTotalAcksFailed());
     }
 
     private static void sleep(int ms){
