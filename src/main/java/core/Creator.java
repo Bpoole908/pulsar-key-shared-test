@@ -1,48 +1,42 @@
-package tutorial;
+package core;
 
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.TypedMessageBuilder;
 import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Producer;
-import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.admin.PulsarAdminException;
 import org.apache.pulsar.broker.service.BrokerServiceException.ConsumerAssignException;
+
+import org.json.simple.JSONObject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.stream.IntStream;
 
 import com.sun.corba.se.pept.transport.Selector;
 
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class Produces {
-    private static final Logger log = LoggerFactory.getLogger(Produces.class);
+public class Creator {
+    private static final Logger log = LoggerFactory.getLogger(Creator.class);
     private static final int UNIT_TIME = 1000; // milliseconds
-    private int nMessages;
-    private PulsarClient client;
-    private Producer<byte[]> producer;
+    private Producer producer;
     
-    public Produces(PulsarClient client, String topicName, int nMessages) 
-        throws PulsarClientException {
-
-        this.client = client;
-        this.nMessages = nMessages;
-        this.producer = client.newProducer()
-                .topic(topicName)
-                .enableBatching(false)
-                .create();
+    public Creator(Producer producer) {
+        this.producer = producer;
     }
     
-    public void stream(int messagesPerSecond, PseudoStream pseudoStream,
-        String topic, String subscription) 
+    public void stream(int nMessages, int messagesPerSecond,
+        PseudoStream pseudoStream, String topic, String subscription) 
         throws PulsarClientException, 
                ConsumerAssignException, 
                PulsarAdminException {
       
-        IntStream.range(1, this.nMessages+1).forEach(i -> {
+        IntStream.range(1, nMessages+1).forEach(i -> {
             try{
                 //long startTime = System.nanoTime();
                 pseudoStream.managePseudoConsumers(topic, subscription);
@@ -53,19 +47,24 @@ public class Produces {
                 System.exit(1);
             }
            
-            String payload = String.format("hello-pulsar-%d", i);
+            String payload = String.format("fake-payload-%d", i);
             String orderingKey = UUID.randomUUID().toString();
 
             // Create a pseudo stream that predicts which consumers will recieve 
             // each message based on the ordering key's hashing slot.
-            int slot = pseudoStream.getSlot(orderingKey.getBytes());
             String consumerName = pseudoStream.stream(orderingKey.getBytes());
+            int slot = pseudoStream.getSlot(orderingKey.getBytes());
+            int range = pseudoStream.getHashRange(consumerName);
+
+            // Build JSON message
+            String jsonMessage 
+                = generateJson(payload, orderingKey, consumerName, slot, range);
 
              try {
                 // Build a message object and send message.
                 MessageId msgId = this.producer.newMessage()
                     .orderingKey(orderingKey.getBytes())
-                    .value(payload.getBytes())
+                    .value(jsonMessage.getBytes())
                     .send();
                 log.info("Published message: '{}' ID: {}", payload, msgId);
                 pseudoStream.logMessageDistribution(consumerName, slot);
@@ -77,17 +76,16 @@ public class Produces {
             sleep(UNIT_TIME / messagesPerSecond);
         });
         pseudoStream.logMessageDistribution();
-        client.close();
+        this.producer.close();
     }
 
-    public void stream(int messagesPerSecond) 
+    public void stream(int nMessages, int messagesPerSecond) 
         throws PulsarClientException {
 
-        log.info("Sending {} messages", this.nMessages);
+        log.info("Sending {} messages", nMessages);
 
-        IntStream.range(1, this.nMessages).forEach(i -> {
+        IntStream.range(1, nMessages).forEach(i -> {
             String payload = String.format("hello-pulsar-%d", i);
-            // Randomly generate ordering key
             String orderingKey = UUID.randomUUID().toString();
 
             try {
@@ -105,9 +103,29 @@ public class Produces {
             }
             sleep(UNIT_TIME / messagesPerSecond);
         });
-        client.close();
+        this.producer.close();
     }
 
+    private String generateJson(String payload, String orderingKey, 
+        String name, int slot, int range){
+
+        JSONObject jo = new JSONObject();
+
+        Map prediction = new LinkedHashMap(3);
+        prediction.put("name", name);
+        prediction.put("slot", slot);
+        prediction.put("range", range);
+
+        Map producer = new LinkedHashMap(3);
+        producer.put("payload", payload);
+        producer.put("orderingKey", orderingKey);
+        producer.put("prediction", prediction);
+
+        jo.put("producer", producer);
+
+        return jo.toJSONString();
+    }
+    
     private void sleep(int ms){
         try {
             Thread.sleep(ms);

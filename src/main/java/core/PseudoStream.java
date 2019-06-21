@@ -1,4 +1,4 @@
-package tutorial;
+package core;
 
 import org.apache.pulsar.broker.service.HashRangeStickyKeyConsumerSelector;
 import org.apache.pulsar.broker.service.persistent.PersistentStickyKeyDispatcherMultipleConsumers;
@@ -136,7 +136,7 @@ public class PseudoStream {
         }
 
         // Extract each consumer's hashing range.
-        getHashRanges();
+        getConsumerRange();
        
         // When a consumer is dorpped or added log the hash ranges.
         if (!droppedConsumers.isEmpty() || !newConsumers.isEmpty()) {
@@ -146,6 +146,16 @@ public class PseudoStream {
         // Store current consumers for the next iteration.
         this.prevConnectedConsumers.clear();
         this.prevConnectedConsumers.putAll(connectedConsumers);
+    }
+
+    public int getSlot(byte[] orderingKey){
+        return Murmur3_32Hash.getInstance()
+            .makeHash(orderingKey) % this.hashRangeSize;
+    }
+
+    public int getHashRange(String consumerName){
+        Consumer consumer = this.consumerNames.get(consumerName);
+        return this.consumerRange.get(consumer);
     }
 
     public void logMessageDistribution(){
@@ -158,23 +168,17 @@ public class PseudoStream {
     }
 
     public void logHashRanges(){
-        for (Map.Entry<Consumer, Integer>  consumer: this.consumerRange.entrySet())
-        {
+        for (Map.Entry<Consumer, Integer>  consumer: this.consumerRange.entrySet()) {
             log.info("NEW HASH - Consumer: {} Range: {}", 
                 this.consumers.get(consumer.getKey()), consumer.getValue());
         }
     }
-
-    public int getSlot(byte[] orderingKey){
-        return Murmur3_32Hash.getInstance()
-            .makeHash(orderingKey) % this.hashRangeSize;
-    }
-
+ 
     /**
      * Override security to get private variable consumerRange,
      * which contains the hash ranges for each mock consumer.
      */
-    private void getHashRanges(){
+    private void getConsumerRange() {
         try{
             Field field = selector.getClass().getDeclaredField("consumerRange");
             field.setAccessible(true);

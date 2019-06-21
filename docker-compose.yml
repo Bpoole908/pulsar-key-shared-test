@@ -14,7 +14,7 @@ services:
   consumer:
       build: .
       image: pulsar-key-sharing:2.4.0-SHAPSHOT 
-      entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=tutorial.ConsumerTutorial"]
+      entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=core.CollectorMain"]
       volumes: 
         - /home/ben/.m2:/root/.m2/
       depends_on:
@@ -22,6 +22,7 @@ services:
       environment:
         SERVICE_URL: "pulsar://pulsar:6650" #"pulsar://192.168.99.100:30002";
         TOPIC: "persistent://public/default/key_shared"
+        PRODUCE_TOPIC: "persistent://public/default/key_shared_stats"
         SUBSCRIPTION: "key_shared"
         BEFORE_START: 15000
         TIME_OUT: 60000
@@ -30,7 +31,7 @@ services:
 
   producer:
     image: pulsar-key-sharing:2.4.0-SHAPSHOT 
-    entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=tutorial.ProducerTutorial"]
+    entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=core.CreatorMain"]
     volumes: 
       - /home/ben/.m2:/root/.m2/
     depends_on:
@@ -41,5 +42,5 @@ services:
       TOPIC: "persistent://public/default/key_shared"
       SUBSCRIPTION: "key_shared"
       BEFORE_START: 20000
-      N_MESSAGES: 200
+      N_MESSAGES: 50
     restart: on-failure:5
