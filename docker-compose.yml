@@ -12,35 +12,54 @@ services:
       - /home/docker-volumes/key-sharing:/pulsar/data
 
   consumer:
-      build: .
-      image: pulsar-key-sharing:2.4.0-SHAPSHOT 
-      entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=core.CollectorMain"]
-      volumes: 
-        - /home/ben/.m2:/root/.m2/
-      depends_on:
-        - pulsar
-      environment:
-        SERVICE_URL: "pulsar://pulsar:6650" #"pulsar://192.168.99.100:30002";
-        TOPIC: "persistent://public/default/key_shared"
-        PRODUCE_TOPIC: "persistent://public/default/key_shared_stats"
-        SUBSCRIPTION: "key_shared"
-        BEFORE_START: 15000
-        TIME_OUT: 60000
-      restart: on-failure:5
-      scale: 5
+    #build:
+      # context: .
+      #dockerfile: build/demo.Dockerfile
+    image: pulsar-demo-env:latest #pulsar-key-sharing:2.4.0-SHAPSHOT 
+    entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=core.CollectorMain"]
+    volumes: 
+      - /home/ben/.m2:/home/ben/.m2/ 
+      - ${PWD}:/home/ben/demo
+    environment:
+      SERVICE_URL: "pulsar://pulsar:6650" #"pulsar://192.168.99.100:30002";
+      TOPIC: "persistent://public/default/key_shared"
+      PRODUCE_TOPIC: "persistent://public/default/key_shared_stats"
+      SUBSCRIPTION: "key-shared"
+      BEFORE_START: 15000
+      TIME_OUT: 60000
+    depends_on:
+      - pulsar
+    restart: on-failure:5
+    scale: 2
 
   producer:
-    image: pulsar-key-sharing:2.4.0-SHAPSHOT 
+    image: pulsar-demo-env:latest
     entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=core.CreatorMain"]
     volumes: 
-      - /home/ben/.m2:/root/.m2/
-    depends_on:
-      - consumer
+      - /home/ben/.m2:/home/ben/.m2/ 
+      - ${PWD}:/home/ben/demo
     environment:
       SERVICE_URL: "pulsar://pulsar:6650" #"pulsar://192.168.99.100:30002";
       SERVICE_HTTP_URL: "http://pulsar:8080"
       TOPIC: "persistent://public/default/key_shared"
-      SUBSCRIPTION: "key_shared"
+      SUBSCRIPTION: "key-shared"
       BEFORE_START: 20000
       N_MESSAGES: 50
+    depends_on:
+      - pulsar
+    restart: on-failure:5
+
+  visualizer:
+    image: pulsar-demo-env:latest 
+    entrypoint: ["python", "-u", "python/stat_tracker.py"]
+    volumes:
+      - ${PWD}:/home/ben/demo
+    environment:
+      SERVICE_URL: "pulsar://pulsar:6650" 
+      TOPIC: "persistent://public/default/key_shared_stats"
+      SUBSCRIPTION: "key-shared-stats"
+      BEFORE_START: 17000
+      PYTHONUNBUFFERED: 0 
+    depends_on:
+      - pulsar
     restart: on-failure:5

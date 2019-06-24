@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import static org.mockito.Mockito.mock;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.lang.reflect.Field;
@@ -156,6 +157,13 @@ public class PseudoStream {
     public int getHashRange(String consumerName){
         Consumer consumer = this.consumerNames.get(consumerName);
         return this.consumerRange.get(consumer);
+    }
+
+    public List getConnectedConsumers() {
+        List<String> connectedConsumers = new ArrayList<String>();
+        connectedConsumers.addAll(this.prevConnectedConsumers.keySet());
+    
+        return connectedConsumers;
     }
 
     public void logMessageDistribution(){

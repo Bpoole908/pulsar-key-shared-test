@@ -17,6 +17,8 @@ import java.util.stream.IntStream;
 
 import com.sun.corba.se.pept.transport.Selector;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.UUID;
@@ -55,10 +57,11 @@ public class Creator {
             String consumerName = pseudoStream.stream(orderingKey.getBytes());
             int slot = pseudoStream.getSlot(orderingKey.getBytes());
             int range = pseudoStream.getHashRange(consumerName);
+            List<String> connected = pseudoStream.getConnectedConsumers();
 
             // Build JSON message
-            String jsonMessage 
-                = generateJson(payload, orderingKey, consumerName, slot, range);
+            String jsonMessage = generateJson(payload, orderingKey, 
+                consumerName, connected, slot, range);
 
              try {
                 // Build a message object and send message.
@@ -107,7 +110,7 @@ public class Creator {
     }
 
     private String generateJson(String payload, String orderingKey, 
-        String name, int slot, int range){
+        String name, List conneceted, int slot, int range){
 
         JSONObject jo = new JSONObject();
 
@@ -116,10 +119,11 @@ public class Creator {
         prediction.put("slot", slot);
         prediction.put("range", range);
 
-        Map producer = new LinkedHashMap(3);
+        Map producer = new LinkedHashMap(4);
         producer.put("payload", payload);
         producer.put("orderingKey", orderingKey);
         producer.put("prediction", prediction);
+        producer.put("connected", conneceted);
 
         jo.put("producer", producer);
 
