@@ -9,13 +9,10 @@ services:
       - 8080:8080
     entrypoint: bin/pulsar standalone
     volumes: 
-      - /home/docker-volumes/key-sharing:/pulsar/data
+      - pulsdata:/pulsar/data
 
   consumer:
-    #build:
-      # context: .
-      #dockerfile: build/demo.Dockerfile
-    image: pulsar-demo-env:latest #pulsar-key-sharing:2.4.0-SHAPSHOT 
+    image: pulsar-demo-env:dash #pulsar-key-sharing:2.4.0-SHAPSHOT 
     entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=core.CollectorMain"]
     volumes: 
       - /home/ben/.m2:/home/ben/.m2/ 
@@ -25,15 +22,13 @@ services:
       TOPIC: "persistent://public/default/key_shared"
       PRODUCE_TOPIC: "persistent://public/default/key_shared_stats"
       SUBSCRIPTION: "key-shared"
-      BEFORE_START: 15000
-      TIME_OUT: 60000
-    depends_on:
-      - pulsar
+      SLEEP_TIME: 3000
+      TIME_OUT: 0
     restart: on-failure:5
-    scale: 2
+    scale: 3
 
   producer:
-    image: pulsar-demo-env:latest
+    image: pulsar-demo-env:dash
     entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=core.CreatorMain"]
     volumes: 
       - /home/ben/.m2:/home/ben/.m2/ 
@@ -43,23 +38,26 @@ services:
       SERVICE_HTTP_URL: "http://pulsar:8080"
       TOPIC: "persistent://public/default/key_shared"
       SUBSCRIPTION: "key-shared"
-      BEFORE_START: 20000
-      N_MESSAGES: 50
-    depends_on:
-      - pulsar
+      BEFORE_START: 15000
+      N_MESSAGES: 100
     restart: on-failure:5
 
-  visualizer:
-    image: pulsar-demo-env:latest 
-    entrypoint: ["python", "-u", "python/stat_tracker.py"]
+  visualize:
+    image: pulsar-demo-env:dash
+    entrypoint: ["python", "-u", "dashboard/pulsar-dash/key-share-dash.py"]
     volumes:
       - ${PWD}:/home/ben/demo
+    ports:
+      - 8050:8050
     environment:
       SERVICE_URL: "pulsar://pulsar:6650" 
       TOPIC: "persistent://public/default/key_shared_stats"
       SUBSCRIPTION: "key-shared-stats"
-      BEFORE_START: 17000
-      PYTHONUNBUFFERED: 0 
-    depends_on:
-      - pulsar
+      TIMEOUT: .1
+      SLEEP_TIME: 5
+      RETRIES: 10
+      PYTHONUNBUFFERED: 0 # Allows python print to be seen from docker logs.
     restart: on-failure:5
+
+volumes:
+      pulsdata:

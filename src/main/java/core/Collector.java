@@ -67,7 +67,8 @@ public class Collector {
             String orderingKey = new String(msg.getOrderingKey());
             log.info("Received message: {} ID {} Ordering Key: {}", 
                 payload, msg.getMessageId(), orderingKey);
-
+            this.localMsgCount++;
+            
             try {
                 payload = generateJson(payload);
 
@@ -76,7 +77,6 @@ public class Collector {
                 System.exit(1);
             }
 
-            this.localMsgCount++;
             stream(producer, payload);
 
             // Acknowledge processing of the message so that it can be deleted
@@ -102,7 +102,7 @@ public class Collector {
         JSONObject jo = (JSONObject) parser.parse(jsonMessage); 
 
         Map m = new LinkedHashMap(2);
-        m.put("consumerName", this.consumer.getConsumerName());
+        m.put("name", this.consumer.getConsumerName());
         m.put("messageCount", this.localMsgCount);
 
         jo.put("consumer", m);

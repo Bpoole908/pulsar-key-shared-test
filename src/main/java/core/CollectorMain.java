@@ -17,8 +17,8 @@ public class CollectorMain {
     private static final String CONSUME_TOPIC = System.getenv("TOPIC");
     private static final String PRODUCE_TOPIC = System.getenv("PRODUCE_TOPIC");
     private static final String SUBSCRIPTION = System.getenv("SUBSCRIPTION");
-    private static final int BEFORE_START
-         = Integer.parseInt(System.getenv("BEFORE_START"));
+    private static final int SLEEP_TIME 
+        = Integer.parseInt(System.getenv("SLEEP_TIME"));
     private static final int TIME_OUT 
         = Integer.parseInt(System.getenv("TIME_OUT"));
 
@@ -28,16 +28,9 @@ public class CollectorMain {
                 .serviceUrl(SERVICE_URL)
                 .build();
 
-        // Sleep consumer while cluster initializes.
-        log.info("Sleeping for {}", BEFORE_START);
-        sleep(BEFORE_START);
-
         try{
-            Consumer consumer = client.newConsumer()
-                .topic(CONSUME_TOPIC)
-                .subscriptionName(SUBSCRIPTION)
-                .subscriptionType( SubscriptionType.Key_Shared)
-                .subscribe();
+            Consumer consumer = connect(client, CONSUME_TOPIC, SUBSCRIPTION, 
+                SLEEP_TIME);
             log.info("CONSUMER {} CONNECTED: {}",
                 consumer.getConsumerName(), CONSUME_TOPIC);
             Collector collector = new Collector(consumer); 
@@ -54,6 +47,24 @@ public class CollectorMain {
             client.close();
         }
         
+    }
+    
+    private static Consumer connect(PulsarClient client, String topic, 
+        String subscription, int sleepTime) {
+        
+        while (true) {
+            try {
+                return client.newConsumer()
+                    .topic(CONSUME_TOPIC)
+                    .subscriptionName(SUBSCRIPTION)
+                    .subscriptionType( SubscriptionType.Key_Shared)
+                    .subscribe();
+
+            } catch(PulsarClientException e) {
+                log.error(e.getMessage());
+                sleep(sleepTime);
+            }
+        }
     }
 
     private static void sleep(int ms){

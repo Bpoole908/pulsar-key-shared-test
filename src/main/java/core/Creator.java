@@ -57,11 +57,13 @@ public class Creator {
             String consumerName = pseudoStream.stream(orderingKey.getBytes());
             int slot = pseudoStream.getSlot(orderingKey.getBytes());
             int range = pseudoStream.getHashRange(consumerName);
-            List<String> connected = pseudoStream.getConnectedConsumers();
+            int msgCount = pseudoStream.getConsumerMsgCount(consumerName);
+            Map<String, Integer> connected 
+                = pseudoStream.getConnectedConsumersRanges();
 
             // Build JSON message
             String jsonMessage = generateJson(payload, orderingKey, 
-                consumerName, connected, slot, range);
+                consumerName, connected, slot, range, msgCount);
 
              try {
                 // Build a message object and send message.
@@ -70,7 +72,7 @@ public class Creator {
                     .value(jsonMessage.getBytes())
                     .send();
                 log.info("Published message: '{}' ID: {}", payload, msgId);
-                pseudoStream.logMessageDistribution(consumerName, slot);
+                pseudoStream.logMsgDistribution(consumerName, slot);
                    
             } catch (PulsarClientException e) {
                 log.error(e.getMessage());
@@ -78,7 +80,7 @@ public class Creator {
             }
             sleep(UNIT_TIME / messagesPerSecond);
         });
-        pseudoStream.logMessageDistribution();
+        pseudoStream.logMsgDistribution();
         this.producer.close();
     }
 
@@ -110,19 +112,20 @@ public class Creator {
     }
 
     private String generateJson(String payload, String orderingKey, 
-        String name, List conneceted, int slot, int range){
+        String name, Map conneceted, int slot, int range, int msgCount){
 
         JSONObject jo = new JSONObject();
 
-        Map prediction = new LinkedHashMap(3);
-        prediction.put("name", name);
-        prediction.put("slot", slot);
-        prediction.put("range", range);
+        Map pseudo = new LinkedHashMap(3);
+        pseudo.put("name", name);
+        pseudo.put("slot", slot);
+        pseudo.put("range", range);
+        pseudo.put("messageCount", msgCount);
 
         Map producer = new LinkedHashMap(4);
         producer.put("payload", payload);
         producer.put("orderingKey", orderingKey);
-        producer.put("prediction", prediction);
+        producer.put("pseudoConsumer", pseudo);
         producer.put("connected", conneceted);
 
         jo.put("producer", producer);

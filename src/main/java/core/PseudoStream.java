@@ -25,9 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
 public class PseudoStream {
-    private static final Logger log 
-        = LoggerFactory.getLogger(PseudoStream.class);
-
+    private static final Logger log = LoggerFactory.getLogger(PseudoStream.class);
     private HashRangeStickyKeyConsumerSelector selector;
     private PulsarAdmin admin;
     private int hashRangeSize;
@@ -44,7 +42,7 @@ public class PseudoStream {
     private Map<String, Consumer> prevConnectedConsumers 
         = new LinkedHashMap<String, Consumer>(); 
      // Tracks history of messages sent to all consumers that were once connected.
-    private Map<String, Integer> messageDist 
+    private Map<String, Integer> msgDist 
         = new LinkedHashMap<String, Integer>();
 
     PseudoStream(String serviceHttpUrl, int hashRangeSize) 
@@ -59,8 +57,7 @@ public class PseudoStream {
     }
 
     public static List<ConsumerStats> getConsumerStats(PulsarAdmin admin, 
-        String topic, 
-        String subscription) 
+        String topic, String subscription) 
         throws PulsarClientException, 
                PulsarAdminException {   
                 
@@ -81,7 +78,7 @@ public class PseudoStream {
         Consumer targetConsumer = selector.select(orderingKey);
         String name = this.consumers.get(targetConsumer);
         // Iterate the message distribution.
-        this.messageDist.put(name, this.messageDist.get(name)+1);
+        this.msgDist.put(name, this.msgDist.get(name)+1);
 
         return name;
     }
@@ -127,7 +124,7 @@ public class PseudoStream {
                 Consumer consumer = mock(Consumer.class);
                 this.consumers.put(consumer, newConsumerName);
                 this.consumerNames.put(newConsumerName, consumer);
-                this.messageDist.put(newConsumerName, 0);
+                this.msgDist.put(newConsumerName, 0);
                 // Add to Pulsar's hash range tracker.
                 selector.addConsumer(consumer);
             } catch(ConsumerAssignException e) {
@@ -159,6 +156,22 @@ public class PseudoStream {
         return this.consumerRange.get(consumer);
     }
 
+    public int getConsumerMsgCount(String name){
+        return this.msgDist.get(name);
+    }
+
+    public Map getConnectedConsumersRanges(){
+        Map<String, Integer> connectedConsumerRanges = new LinkedHashMap<>();
+
+        for (Map.Entry<Consumer, Integer>  consumer: this.consumerRange.entrySet()) {
+            String key =this.consumers.get(consumer.getKey());
+            int value = consumer.getValue();
+            connectedConsumerRanges.put(key, value);
+        }
+
+        return connectedConsumerRanges;
+    }
+
     public List getConnectedConsumers() {
         List<String> connectedConsumers = new ArrayList<String>();
         connectedConsumers.addAll(this.prevConnectedConsumers.keySet());
@@ -166,20 +179,17 @@ public class PseudoStream {
         return connectedConsumers;
     }
 
-    public void logMessageDistribution(){
-        log.info("Message distribution:, {}", this.messageDist);
+    public void logMsgDistribution(){
+        log.info("Message distribution:, {}", this.msgDist);
     }
 
-    public void logMessageDistribution(String name, int slot){
+    public void logMsgDistribution(String name, int slot){
         log.info("Name: {} Slot: {} Message distribution: {}",
-            name, slot, this.messageDist);
+            name, slot, this.msgDist);
     }
 
     public void logHashRanges(){
-        for (Map.Entry<Consumer, Integer>  consumer: this.consumerRange.entrySet()) {
-            log.info("NEW HASH - Consumer: {} Range: {}", 
-                this.consumers.get(consumer.getKey()), consumer.getValue());
-        }
+        log.info("NEW HASHS - {}", getConnectedConsumersRanges());
     }
  
     /**
