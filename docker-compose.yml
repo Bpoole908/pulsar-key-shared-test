@@ -16,7 +16,7 @@ services:
     entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=core.CollectorMain"]
     volumes: 
       - /home/ben/.m2:/home/ben/.m2/ 
-      - ${PWD}:/home/ben/demo
+      - ${PWD}:/home/ben/demos
     environment:
       SERVICE_URL: "pulsar://pulsar:6650" #"pulsar://192.168.99.100:30002";
       TOPIC: "persistent://public/default/key_shared"
@@ -32,13 +32,13 @@ services:
     entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=core.CreatorMain"]
     volumes: 
       - /home/ben/.m2:/home/ben/.m2/ 
-      - ${PWD}:/home/ben/demo
+      - ${PWD}:/home/ben/demos
     environment:
       SERVICE_URL: "pulsar://pulsar:6650" #"pulsar://192.168.99.100:30002";
       SERVICE_HTTP_URL: "http://pulsar:8080"
       TOPIC: "persistent://public/default/key_shared"
       SUBSCRIPTION: "key-shared"
-      BEFORE_START: 15000
+      BEFORE_START: 20000
       N_MESSAGES: 100
     restart: on-failure:5
 
@@ -46,7 +46,7 @@ services:
     image: pulsar-demo-env:dash
     entrypoint: ["python", "-u", "dashboard/pulsar-dash/key-share-dash.py"]
     volumes:
-      - ${PWD}:/home/ben/demo
+      - ${PWD}:/home/ben/demos
     ports:
       - 8050:8050
     environment:

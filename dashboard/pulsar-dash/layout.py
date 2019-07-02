@@ -8,6 +8,7 @@ def server_layout(app, figs):
     return html.Div(
     children=[
         dcc.Store(id='data-store',storage_type='memory'),
+        #dcc.Store(id='color-maps',storage_type='memory'),
         # header
         html.Div(
             children=[
@@ -36,7 +37,7 @@ def server_layout(app, figs):
                             figure=figs['big-graph']
                         ),
                     ],
-                    className="two-thirds column wind__speed__container",
+                    className="two-thirds column large__graph__container",
                 ),
                 html.Div(
                     children=[
@@ -56,7 +57,7 @@ def server_layout(app, figs):
                                     figure=figs['small-graph-1']
                                 ),
                             ],
-                            className="graph__container first",
+                            className="small__graph__container first",
                         ),
                         # wind direction
                         html.Div(
@@ -73,7 +74,7 @@ def server_layout(app, figs):
                                     #figure=figs['small-graph-2']
                                 ),
                             ],
-                            className="graph__container second",
+                            className="gsmall__graph__container second",
                         ),
                     ],
                     className="one-third column histogram__direction",

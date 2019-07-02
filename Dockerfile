@@ -1,6 +1,6 @@
 #FROM maven:3.6-jdk-8-slim as workspace
 FROM jupyter-env:3.6.7
-WORKDIR /home/ben/demo
+WORKDIR /home/ben/demos
 
 USER root 
 # Install jdk and maven
