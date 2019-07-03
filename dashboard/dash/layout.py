@@ -15,8 +15,10 @@ def server_layout(app, figs):
                 html.Div(
                     children=[
                         html.H4("Puslar: Key Sharing Demo", className="app__header__title"),
-                        html.P(
-                            "This is a visualize rpersentation of Pulsar's key sharing subscription type.",
+                        html.P("""
+                                This is app provides a visualization of 
+                                Pulsar's key sharing subscription type.
+                                """,
                             className="app__header__title--grey",
                         ),
                     ],
@@ -41,14 +43,32 @@ def server_layout(app, figs):
                 ),
                 html.Div(
                     children=[
-                        # hash range pie
                         html.Div(
+                            # Message Distribution      
+                            children=[
+                                html.Div(
+                                    children=[
+                                        html.H6(
+                                            "Message Distribution",
+                                            className="graph__title",
+                                        )
+                                    ]
+                                ),
+                                dcc.Graph(
+                                    id="small-graph-2",
+                                    figure=figs['small-graph-2']
+                                ),
+                            ],
+                            className="small__graph__container first",
+                        ),
+                        html.Div(
+                            # Hash range sizes
                             children=[
                                 html.Div(
                                     children=[
                                         html.H6(
                                             "Consumer Hash Ranges",
-                                            className="graph__title",
+                                            className="graph__title"
                                         )
                                     ]
                                 ),
@@ -57,24 +77,7 @@ def server_layout(app, figs):
                                     figure=figs['small-graph-1']
                                 ),
                             ],
-                            className="small__graph__container first",
-                        ),
-                        # wind direction
-                        html.Div(
-                            children=[
-                                html.Div(
-                                    [
-                                        html.H6(
-                                            "Message Distribution", className="graph__title"
-                                        )
-                                    ]
-                                ),
-                                dcc.Graph(
-                                    id="small-graph-2",
-                                    #figure=figs['small-graph-2']
-                                ),
-                            ],
-                            className="gsmall__graph__container second",
+                            className="small__graph__container second",
                         ),
                     ],
                     className="one-third column histogram__direction",

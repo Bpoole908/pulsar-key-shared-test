@@ -44,7 +44,7 @@ services:
 
   visualize:
     image: pulsar-demo-env:dash
-    entrypoint: ["python", "-u", "dashboard/pulsar-dash/key-share-dash.py"]
+    entrypoint: ["python", "-u", "dashboard/dash/key-share-dash.py"]
     volumes:
       - ${PWD}:/home/ben/demos
     ports:
