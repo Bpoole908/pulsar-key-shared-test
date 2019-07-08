@@ -23,11 +23,10 @@ from graphs import update_dual_bar, update_pie, update_all
 ###############################################################################
 # Below are all the static global variable initializations. Be warned that    #
 # global variables can have weird interactions when multiple instances of the #
-# app are running (See Dash documentatio for more information on this issue). # 
+# app are running (see Dash documentation for more information on this issue).# 
 ###############################################################################
 
 DELAY = 1
-MS = 1000 # milliseconds 
 MB = 1e-6 # bytes in mb
 COLOR_SCALE = os.environ.get('COLOR_SCALE', 11)
 SERVICE_URL = os.environ.get('SERVICE_URL', '')
@@ -41,7 +40,6 @@ TIMEOUT = float(os.environ.get('TIMEOUT', .1))
 # Note: It isnt worth converting the COLOR_GRAD to a deque unless you are doing
 # 100+ poplefts and appends.
 COLOR_RANGE = cl.scales['11']['div']['RdYlBu']
-#COLOR_GRAD = cl.interp(COLOR_RANGE, COLOR_SCALE)
 config = {
     "graph_bg": "#333436", 
     "graph_line": "#fff",
@@ -69,7 +67,7 @@ DEBUG = args.debug # run locally for testing/UI work
 # initialization and updating,and lastly dash callbacks for updating the app  #
 ###############################################################################
 
-def connect(timeout, retries):
+def connect(retries):
     client = pulsar.Client(SERVICE_URL)
     for attempt in range(retries):
         try:
@@ -83,7 +81,7 @@ def connect(timeout, retries):
 
 def consume():
     try:
-        msg = consumer.receive(int(TIMEOUT*MS))
+        msg = consumer.receive(int(TIMEOUT*1000))
         if msg is None: return msg
         return json.loads(msg.data().decode())
     except Exception:
@@ -127,7 +125,7 @@ def parse_message(payload):
     # Extract what the consumer actually reported
     consumer = payload['consumer']
     store['actualMsgCount'] = {consumer['name']:consumer['messageCount']}
-    #print("DEBUG - Payload:{}".format(store))
+
     return store
 
 def compute_hash_size(ranges):
@@ -165,7 +163,6 @@ def update_data_store(payload, data_store):
         graph_data['actualMsgCount'].pop(c, None)
         graph_data['pseudoMsgCount'].pop(c, None)
         color_maps['consumer2color'].pop(c, None)
-        #color_maps['color2consumer'].pop(c_color, None)
         
     for c in new_consumers:
         # Initialize new consumer to show on graphs.
@@ -180,8 +177,6 @@ def update_data_store(payload, data_store):
     graph_data['activeRanges'] = compute_hash_size(stats['activeRanges'])
     graph_data['pseudoMsgCount'].update(stats['pseudoMsgCount'])
     graph_data['actualMsgCount'].update(stats['actualMsgCount'])
-    #data_store['colorMaps'] = color_maps
-    #data_store['graphData'] = graph_data
 
 ###############################################################################
 # App intitialization begins here. This will create and start the Dash app    #
@@ -195,7 +190,7 @@ app = dash.Dash(__name__)
 # Initialize graphs
 init = init_data_store() if not DEBUG else preload_data_store()
 figs={
-    'big-graph': update_dual_bar(
+    'big-graph-1': update_dual_bar(
         x_pseudo=list(init['graphData']['pseudoMsgCount'].keys()),
         y_pseudo=list(init['graphData']['pseudoMsgCount'].values()), 
         x_actual=list(init['graphData']['actualMsgCount'].keys()),
@@ -215,7 +210,7 @@ figs={
 app.layout = server_layout(app, figs)
 
 # Connect to consumer
-if not DEBUG: client, consumer = connect(TIMEOUT, RETRIES)
+if not DEBUG: client, consumer = connect(RETRIES)
 
 @app.callback(
     Output('data-store', 'data'),
@@ -228,9 +223,9 @@ def dashboard(n, data_store):
     if data_store is None:
         data_store = init_data_store() if not DEBUG else preload_data_store()
     if payload is not None:
-        update_data_store(payload, data_store) # update data store
+        update_data_store(payload, data_store)
 
-    data_store_size = sys.getsizeof(data_store)
+    data_store_size = sys.getsizeof(data_store) # size of object in bytes
     print("DEBUG - Data store: {}".format(data_store))
     print("DEBUG - Data store size: {} bytes {:.6f} mb"
         .format(data_store_size, data_store_size*MB))
@@ -239,7 +234,7 @@ def dashboard(n, data_store):
 
 @app.callback(  
     [
-        Output('big-graph', 'figure'), 
+        Output('big-graph-1', 'figure'), 
         Output('small-graph-1', 'figure'),
         Output('small-graph-2', 'figure')
     ],

@@ -14,7 +14,7 @@ def update_dual_bar(x_pseudo, y_pseudo, x_actual, y_actual, config):
         'barmode':'group',
         'plot_bgcolor':config["graph_bg"],
         'paper_bgcolor':config["graph_bg"],
-        'height': 800,
+        #'height': 800,
         'bargap': .6,
         'font':{"color": "#fff"},
         'xaxis':{
@@ -97,6 +97,10 @@ def update_pie(values, labels, config):
     }
     data = [trace1]
     return {'data':data, 'layout':layout}
+
+def update_gantt(ranges, labels,):
+    
+    pass
 
 def update_all(graph_data, config):
     # All dictionaries in graph_data have the same key. It should be noted
