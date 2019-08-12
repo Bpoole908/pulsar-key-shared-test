@@ -1,8 +1,0 @@
-fastavro
-grpcio
-protobuf>=3.6.1
-six
-certifi
-apache-bookkeeper-client>=4.9.2
-prometheus_client
-ratelimit

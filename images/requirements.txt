@@ -1,0 +1,9 @@
+setuptools
+numpy
+zstandard
+pycountry
+pulsar-client==2.4.0
+plotly
+colorlover
+dash
+

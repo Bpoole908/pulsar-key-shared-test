@@ -1,0 +1,18 @@
+FROM maven:3.6-jdk-8-slim as builder
+
+WORKDIR /home/demo
+COPY pom.xml ./
+COPY src ./src
+
+RUN mvn -q clean install
+
+# Build stage 2
+FROM openjdk:8-jre-alpine as env
+
+RUN addgroup -S demo \
+    && adduser -h /home/demo -G demo -S demo -u 1001
+USER demo
+# Make directories owned by the user
+RUN ["mkdir", "-p", "/home/demo/{pulsar}"]
+WORKDIR /home/demo
+COPY --from=builder /home/demo/target/key-shared-test-0.0.1-lib.jar ./target/

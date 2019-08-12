@@ -3,7 +3,7 @@ version: "2.2"
 services:
 
   pulsar:
-    image: apachepulsar/pulsar:2.4.0-SNAPSHOT
+    image: apachepulsar/pulsar:2.4.0
     ports: 
       - 6650:6650
       - 8080:8080
@@ -12,8 +12,13 @@ services:
       - pulsdata:/pulsar/data
 
   consumer:
-    image: pulsar-demo-env:dash #pulsar-key-sharing:2.4.0-SHAPSHOT 
-    entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=core.CollectorMain"]
+    image: bpoole908/key-shared-test-java:latest
+    command: [
+        "java",
+        "-cp",
+        "target/key-shared-test-0.0.1-lib.jar", 
+        "core.CollectorMain"
+    ]
     volumes: 
       - /home/ben/.m2:/home/ben/.m2/ 
       - ${PWD}:/home/ben/demos
@@ -28,8 +33,13 @@ services:
     scale: 3
 
   producer:
-    image: pulsar-demo-env:dash
-    entrypoint: ["mvn", "exec:java", "-Dexec.mainClass=core.CreatorMain"]
+    image: bpoole908/key-shared-test-java:latest
+    command: [
+        "java",
+        "-cp",
+        "target/key-shared-test-0.0.1-lib.jar", 
+        "core.CreatorMain"
+    ]
     volumes: 
       - /home/ben/.m2:/home/ben/.m2/ 
       - ${PWD}:/home/ben/demos
@@ -43,8 +53,8 @@ services:
     restart: on-failure:5
 
   visualize:
-    image: pulsar-demo-env:dash
-    entrypoint: ["python", "-u", "dashboard/dash/key-share-dash.py"]
+    image: bpoole908/key-shared-test-python:latest
+    command: ["python", "-um", "dashboard.key-share-dash"]
     volumes:
       - ${PWD}:/home/ben/demos
     ports:

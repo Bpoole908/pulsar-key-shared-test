@@ -1,0 +1,19 @@
+FROM python:3.6-slim-stretch
+
+RUN groupadd -r demo \
+    && useradd -d /home/demo -g demo -m -r -u 1000 demo
+
+COPY images/requirements.txt ./build/
+# Install pip packages
+RUN pip install --upgrade pip \
+    && pip install -r build/requirements.txt --no-cache-dir \
+    && rm -rf build
+RUN cat /etc/passwd | grep -i demo
+
+USER demo
+# I'd like bash to run this command, 
+# not sh which does not know abut brace expansion
+RUN [ "/bin/bash", "-c", "mkdir -p /home/demo/{dashboard}" ]
+
+WORKDIR /home/demo
+COPY dashboard/ ./dashboard/
